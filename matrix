@@ -1,0 +1,317 @@
+#!/bin/bash
+
+################################################
+#Name: Andrew Snow
+#Class: CS344
+#Assignment: Program 1: Matrix
+################################################
+
+
+#Grabbing 1 matrix
+if [ $# -lt  3 ]
+then
+    if [ $# == 1 ]
+    then
+
+        #matrix=$(cat)
+        while read -r line
+        do
+            #Split rows by ':' char 
+            matrix="$matrix :$line"
+        done
+
+    elif [ $# == 2 ]
+    then
+    
+        if [ -f "$2" ]
+        then
+
+            #read from file
+            while read line
+            do
+                #Split rows by ':' char 
+                matrix="$matrix :$line"
+            done < $2  
+    
+        else
+            trap "echo 'File not found'; exit 1"   
+        
+        fi
+    fi 
+
+    #Set up matrix and apply appropriate action
+    if [ -z"$matrix" ]
+    then
+    
+        arg=$1
+    
+        matrix=$(echo "$matrix" | tr -s [:space:] ' ') 
+    
+        #rows = the number of ':' chars in the string
+        rows=$(echo "$matrix" | tr -cd ':' | wc -c)
+        #columns = the number of digits in the string / the number of rows
+        columns=$(echo "$matrix" | cut -d ":" -f 2 | tr -cd " " | wc -c) 
+        
+        rowNum=0
+        columnNum=0
+
+    else
+
+        trap "echo 'No file detected'; exit 1"
+    
+    fi
+
+
+    #Echo out the dimentions of the matrix determined above by its rows and columns
+    if [ $arg == "dims" ]
+    then
+        
+        echo "$rows $columns"
+
+
+    #Echo out the transpose of the matrix provided by printing out the values column by column and then row by row
+    elif [ $arg == "transpose" ]
+    then
+        
+        while [ ! "$columnNum" -eq "$columns" ]    
+        do
+            while [ ! "$rowNum" -eq "$rows" ]
+            do
+
+                #echo out cut section of matrix (cut -d ":" cuts to spicified row number) (cut -d " " cuts to specified char)
+                section=$(echo -n -e "$matrix" | cut -d ":" -f $(($rowNum + 2)) | cut -d " " -f $((columnNum + 1)))             
+                
+                var+=$section 
+
+                if [ $rowNum -lt $(($rows - 1)) ]
+                then
+                    var+='\t'
+                else
+                    var+='\n'
+                fi
+             
+                rowNum=$(($rowNum + 1))
+                
+            done
+            
+            rowNum=0
+            columnNum=$(($columnNum + 1))
+        
+        done
+
+
+        columnNum=0
+
+        echo -e -n $var
+
+
+    #Echo out the mean of each column by adding up the values in a column then dividing by the number of rows
+    elif [ $arg == "mean" ]
+    then
+
+        while [ "$columnNum" -lt "$columns" ]
+        do
+            
+            mean=0
+
+            while [ "$rowNum" -lt $rows ]
+            do
+                               
+                #cut out section of matrix and add to mean (cut -d ":" cuts to spicified row number) (cut -c cuts to specified char)
+                value=$(echo "$matrix" | cut -d ":" -f $(($rowNum + 2)) | cut -d " " -f $(($columnNum + 1))) 
+                
+                mean=$(($mean + $value))
+ 
+                rowNum=$(($rowNum + 1))
+            
+            done
+        
+        #Increment Variables and set Variables back to 0
+        rowNum=0;        
+        columnNum=$(($columnNum + 1))
+        
+
+
+        if [ $mean -gt 0 ]
+        then
+            mean=$(($(($mean + $(($rows/2))))/rows)) 
+        else
+            mean=$(($mean / $rows))
+        fi
+
+
+        if [ $columnNum -lt $(($columns)) ]
+        then
+            echo -n -e "$mean"'\t'
+        else
+            echo "$mean"
+        fi
+
+        done
+
+        columnNum=0
+        
+
+    else
+
+        trap "echo 'Unknown Argument, Please use dims, transpose, or mean';  exit 1"
+    fi    
+
+
+#Getting 2 matrices
+elif [ $# == 3 ]
+then
+
+    arg=$1
+    arg2=$2
+    arg3=$3
+    
+    if [ -f "$arg2" ]
+    then
+       
+        while read line
+        do
+            #Split rows by ':' char 
+            matrix1="$matrix1 :$line"
+        done < $2
+        
+        matrix1=$(echo "$matrix1" | tr -s [:space:] ' ')  
+   
+    else
+        #read matrix from reading from arg2 
+        trap "echo 'File not found'; exit 1"  
+        
+    fi
+
+    if [ -f "$arg3" ]
+    then
+
+        while read line
+        do
+            #Split rows by ':' char
+            matrix2="$matrix2 :$line"
+        done < $3    
+    
+         matrix2=$(echo "$matrix2" | tr -s [:space:] ' ')
+    
+    else
+        #read matrix from arg3
+        trap "echo 'File not found'; exit 1" 
+    fi
+
+    #rows = the number of ':' chars in the string
+    rows1=$(echo "$matrix1" | tr -cd ':' | wc -c)
+    rows2=$(echo "$matrix2" | tr -cd ':' | wc -c)
+
+    #columns = the number of spaces in the string
+    columns1=$(echo "$matrix1" | cut -d ":" -f 2 | tr -cd " " | wc -c)
+    columns2=$(echo "$matrix2" | cut -d ":" -f 2 | tr -cd " " | wc -c)
+    
+    rowNum=0
+    columnNum=0
+
+    if [ $arg == "add" ]
+    then
+        #Check dimentions on the two matrixies are the same
+        if [ "$rows1" -eq "$rows2" -a "$columns1" -eq "$columns2" ]
+        then
+            
+            while [ "$rowNum" -lt "$rows1" ]
+            do
+
+                while [ "$columnNum" -lt "$columns1" ]
+                do
+
+                    #cut the same section out of each matrix and add them together (cut -d ":" cuts to spicified row number) (cut -c cuts to specified char)
+ 
+                    value1=$(echo "$matrix1" | cut -d ":" -f $(($rowNum + 2)) | cut -d " " -f $(($columnNum + 1)))
+                    value2=$(echo "$matrix2" | cut -d ":" -f $(($rowNum + 2)) | cut -d " " -f $(($columnNum + 1)))
+ 
+                    if [ "$columnNum" -lt "$(($columns1 -1))" ] 
+                    then 
+                        echo -n -e $((value1 + value2))'\t'       
+                    else
+                        echo $((value1 + value2))
+                    fi
+                    
+                    columnNum=$(($columnNum + 1))
+
+                done
+            
+            columnNum=0
+            rowNum=$(($rowNum + 1))
+
+            done
+
+            rowNum=0
+            
+        else 
+    
+            trap "echo 'In order to add two matrixies they must have the same dimentions'; exit 1"
+        fi
+
+    elif [ $arg == "multiply" ]
+    then
+ 
+        #Check that multiplication is viable, matrix1 columns = matrix2 rows
+        if [ "$(($columns1))" -eq "$rows2" ]
+        then
+            
+            while [ "$rowNum" -lt "$rows1" ]
+            do
+                while [ "$columnNum" -lt "$columns2" ]
+                do
+                   
+                   count=0
+                    
+                    while [ "$count" -lt "$columns1" ]
+                    do
+
+                        #Search through matrix 1 for nth row, count being which char of that row
+                        value1=$(echo "$matrix1" | cut -d ":" -f $(($rowNum + 2)) | cut -d " " -f $(($count + 1)))
+                        #echo "first: $value1"
+                        
+                        #Search through matrix 2 for nth collumn, count being which char of that column
+                        value2=$(echo "$matrix2" | cut -d ":" -f $(($count + 2)) | cut -d " " -f $(($columnNum + 1))) 
+                        #echo "second: $value2"
+                        #Multiply values from both matrixes and add them to final result
+                        value=$(($value + $(($value1 * $value2))))
+                        #echo "value: $value"    
+                        count=$(($count + 1))
+                     
+                     done
+                    
+
+                     if [ "$columnNum" -lt "$(($columns2 - 1))" ]
+                     then
+                        echo -n -e "$value"'\t' 
+                     else
+                        echo -n -e "$value"'\n'
+                     fi
+                     
+                     value=0
+
+                     columnNum=$(($columnNum + 1))
+
+                done
+                
+                columnNum=0
+                rowNum=$(($rowNum + 1))
+
+            done
+
+            rowNum=0
+        
+        else 
+
+            trap "echo 'In order to multiply two matrixes, the frist matrix's number of columns must be equal to the number of rows in the second matrix' exit 1"
+        fi
+
+    else
+
+        trap "echo 'Unknown Argument, please use add, or multiply'; exit 1"
+    fi
+
+else
+    trap "echo 'To many arguments'; exit 1"
+fi    
